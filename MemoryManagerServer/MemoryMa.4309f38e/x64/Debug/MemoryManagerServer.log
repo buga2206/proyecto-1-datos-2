@@ -1,5 +1,7 @@
-﻿  MemoryManagerServer.cpp
-C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MemoryManagerServer\MemoryManagerServer.cpp(24,28): warning C4244: '=': conversión de 'SOCKET' a 'int'; posible pérdida de datos
-C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MemoryManagerServer\MemoryManagerServer.cpp(58,29): warning C4244: '=': conversión de 'SOCKET' a 'int'; posible pérdida de datos
-C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MemoryManagerServer\MemoryManagerServer.cpp(70,35): warning C4267: 'argumento': conversión de 'size_t' a 'int'; posible pérdida de datos
+﻿  MemoryManager.cpp
+  MemoryManagerServer.cpp
+C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MemoryManagerServer\MemoryManagerServer.cpp(52,23): warning C4244: '=': conversión de 'SOCKET' a 'int'; posible pérdida de datos
+C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MemoryManagerServer\MemoryManagerServer.cpp(93,31): warning C4244: '=': conversión de 'SOCKET' a 'int'; posible pérdida de datos
+C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MemoryManagerServer\MemoryManagerServer.cpp(135,54): warning C4267: 'argumento': conversión de 'size_t' a 'int'; posible pérdida de datos
+  Generando código...
   MemoryManagerServer.vcxproj -> C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MemoryManagerServer\x64\Debug\MemoryManagerServer.exe

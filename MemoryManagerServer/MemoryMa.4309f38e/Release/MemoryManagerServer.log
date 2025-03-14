@@ -1,0 +1,12 @@
+﻿  MemoryManager.cpp
+Z:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.43.34808\include\filesystem(12): warning STL4038: The contents of <filesystem> are available only with C++17 or later.
+C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MemoryManagerServer\MemoryManager.cpp(128,25): error C2039: "filesystem": no es un miembro de "std"
+      Z:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.43.34808\include\iomanip(22,1):
+      vea la declaración de 'std'
+  
+C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MemoryManagerServer\MemoryManager.cpp(128,25): error C2878: 'filesystem': no existe un espacio de nombres o clase para este nombre
+C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MemoryManagerServer\MemoryManager.cpp(129,10): error C2653: 'fs': no es un nombre de clase o espacio de nombres
+C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MemoryManagerServer\MemoryManager.cpp(129,14): error C3861: 'exists': no se encontró el identificador
+C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MemoryManagerServer\MemoryManager.cpp(130,14): error C2653: 'fs': no es un nombre de clase o espacio de nombres
+C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MemoryManagerServer\MemoryManager.cpp(130,18): error C3861: 'create_directories': no se encontró el identificador
+  MemoryManagerServer.cpp
