@@ -1,1 +1,2 @@
 # proyecto-2-datos-2
+cosas a considerar, el proyecto se tiene que ejecutar en windows, Memorymanager y Mpointers son dos soluciones por aparte, asi que se ejecutan por separado, parra ejecutar Memorymanager, se ejecuta en la carpeta donde este el .exe del Memorymanager, que debe de encontrarse en "proyecto-1-datos-2\MemoryManagerServer\x64\Debug", ahi, podemos abrir la terminal y ejecutar de la siguente manera. "./MemoryManagerServer.exe --port 8080 --memsize 16 --dumpFolder dumps"
