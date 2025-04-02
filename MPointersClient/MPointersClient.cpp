@@ -1,134 +1,94 @@
 #include <iostream>
-#include <sstream>
-#include <string>
+#include "MPointer.h"
 #include <winsock2.h>
-#include <ws2tcpip.h>
-
 #pragma comment(lib, "Ws2_32.lib")
-
 using namespace std;
 
-// Función auxiliar para enviar un comando y recibir la respuesta
-string sendRequest(const string& serverIP, int serverPort, const string& command) {
-    // Crear socket
-    SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock == INVALID_SOCKET) {
-        cerr << "[CLIENTE] Error al crear el socket." << endl;
-        return "";
-    }
+// Definición del nodo para la lista enlazada
+template <typename T>
+struct Node {
+    T data;
+    MPointer<Node<T>> next;
+    // Constructor por defecto
+    Node() : data(), next() {}
+};
 
-    // Configurar dirección del servidor
-    sockaddr_in serverAddr;
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(serverPort);
-    inet_pton(AF_INET, serverIP.c_str(), &serverAddr.sin_addr);
-
-    // Conectar con el servidor
-    if (connect(sock, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
-        cerr << "[CLIENTE] Error al conectar con el servidor." << endl;
-        closesocket(sock);
-        return "";
-    }
-
-    // Enviar el comando
-    int sendResult = send(sock, command.c_str(), (int)command.size(), 0);
-    if (sendResult == SOCKET_ERROR) {
-        cerr << "[CLIENTE] Error al enviar el comando." << endl;
-        closesocket(sock);
-        return "";
-    }
-    cout << "[CLIENTE] Comando enviado: " << command << endl;
-
-    // Recibir la respuesta
-    char buffer[4096];
-    int bytesReceived = recv(sock, buffer, sizeof(buffer) - 1, 0);
-    if (bytesReceived <= 0) {
-        cerr << "[CLIENTE] Error al recibir la respuesta o conexión cerrada." << endl;
-        closesocket(sock);
-        return "";
-    }
-    buffer[bytesReceived] = '\0';
-    string response(buffer);
-
-    closesocket(sock);
-    return response;
+// Se definen operadores para serializar y deserializar Node<int>
+// Formato: "data;nextID" (donde nextID es el ID del siguiente nodo)
+ostream& operator<<(ostream& os, const Node<int>& node) {
+    os << node.data << ";" << node.next.getID();
+    return os;
 }
 
-// Función runClient, fuera de main, con solicitudes predefinidas
-void runClient() {
-    string serverIP = "127.0.0.1";
-    int serverPort = 8080;
-
-    cout << "=== Inicio de pruebas del cliente ===\n" << endl;
-
-    // 1) create 4 int
-    {
-        string cmd = "create 4 int";
-        string resp = sendRequest(serverIP, serverPort, cmd);
-        cout << "[SERVIDOR] " << resp << endl;
+istream& operator>>(istream& is, Node<int>& node) {
+    string s;
+    getline(is, s);
+    size_t pos = s.find(";");
+    if (pos != string::npos) {
+        node.data = stoi(s.substr(0, pos));
+        int nextID = stoi(s.substr(pos + 1));
+        node.next.setID(nextID);
     }
+    return is;
+}
 
-    // 2) create 8 double
-    {
-        string cmd = "create 8 double";
-        string resp = sendRequest(serverIP, serverPort, cmd);
-        cout << "[SERVIDOR] " << resp << endl;
+// Función para imprimir la lista enlazada usando getRemoteValue()
+template <typename T>
+void printList(MPointer<Node<T>>& head) {
+    MPointer<Node<T>> current = head;
+    int index = 0;
+    while (true) {
+        Node<T> nodeValue = current.getRemoteValue();
+        cout << "Nodo " << index << " -> data: " << nodeValue.data << endl;
+        if (nodeValue.next.isNull())
+            break;
+        current = nodeValue.next;
+        index++;
     }
-
-    // 3) set 1 42  (se asume que el primer bloque tiene ID=1)
-    {
-        string cmd = "set 1 42";
-        string resp = sendRequest(serverIP, serverPort, cmd);
-        cout << "[SERVIDOR] " << resp << endl;
-    }
-
-    // 4) get 1
-    {
-        string cmd = "get 1";
-        string resp = sendRequest(serverIP, serverPort, cmd);
-        cout << "[SERVIDOR] " << resp << endl;
-    }
-
-    // 5) increase 1
-    {
-        string cmd = "increase 1";
-        string resp = sendRequest(serverIP, serverPort, cmd);
-        cout << "[SERVIDOR] " << resp << endl;
-    }
-
-    // 6) decrease 1
-    {
-        string cmd = "decrease 1";
-        string resp = sendRequest(serverIP, serverPort, cmd);
-        cout << "[SERVIDOR] " << resp << endl;
-    }
-
-    // 7) status
-    {
-        string cmd = "status";
-        string resp = sendRequest(serverIP, serverPort, cmd);
-        cout << "[SERVIDOR] " << resp << endl;
-    }
-
-    // 8) map
-    {
-        string cmd = "map";
-        string resp = sendRequest(serverIP, serverPort, cmd);
-        cout << "[SERVIDOR] " << resp << endl;
-    }
-
-    cout << "\n=== Fin de pruebas del cliente ===" << endl;
 }
 
 int main() {
-    // Inicializa Winsock
+    // Inicializar Winsock
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        cerr << "[CLIENTE] WSAStartup falló." << endl;
+        cout << "WSAStartup failed." << endl;
         return 1;
     }
 
-    runClient();
+    // Configurar MPointer para conectarse al Memory Manager
+    MPointer<Node<int>>::Init("127.0.0.1", 8080);
+
+    // Crear el primer nodo (cabeza de la lista)
+    auto head = MPointer<Node<int>>::New();
+    Node<int> n1;
+    n1.data = 10;
+    head = n1;  // Usa operator=(const T&) para asignar n1
+
+    // Crear el segundo nodo
+    auto second = MPointer<Node<int>>::New();
+    Node<int> n2;
+    n2.data = 20;
+    second = n2;
+
+    // Enlazar: head->next = second
+    Node<int> temp = head.getRemoteValue();
+    temp.next = second;
+    head = temp;  // Actualiza head en el servidor
+
+    // Crear el tercer nodo
+    auto third = MPointer<Node<int>>::New();
+    Node<int> n3;
+    n3.data = 30;
+    third = n3;
+
+    // Enlazar: second->next = third
+    Node<int> temp2 = second.getRemoteValue();
+    temp2.next = third;
+    second = temp2;  // Actualiza second en el servidor
+
+    // Imprimir la lista enlazada usando getRemoteValue()
+    cout << "Lista enlazada:" << endl;
+    printList(head);
 
     WSACleanup();
     return 0;
