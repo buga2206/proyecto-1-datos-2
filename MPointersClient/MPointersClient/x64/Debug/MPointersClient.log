@@ -1,4 +1,2 @@
 ﻿  MPointersClient.cpp
-C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MPointersClient\MPointersClient.cpp(21,18): warning C4244: '=': conversión de 'SOCKET' a 'int'; posible pérdida de datos
-C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MPointersClient\MPointersClient.cpp(44,47): warning C4267: 'argumento': conversión de 'size_t' a 'int'; posible pérdida de datos
   MPointersClient.vcxproj -> C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MPointersClient\x64\Debug\MPointersClient.exe

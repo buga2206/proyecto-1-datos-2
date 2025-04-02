@@ -4,150 +4,201 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include "MemoryManager.h"
+#include <exception>
 
 #pragma comment(lib, "Ws2_32.lib")
 
-// Función robusta para parsear los parámetros de la línea de comandos.
-bool parseArguments(int argc, char** argv, int& port, size_t& memSizeBytes, std::string& dumpFolder) {
-    std::string portStr, memsizeStr;
+using namespace std;
+
+bool parseArguments(int argc, char** argv, int& port, size_t& memSizeBytes, string& dumpFolder) {
+    // Lectura básica de argumentos
     for (int i = 1; i < argc; i++) {
-        std::string arg = argv[i];
+        string arg = argv[i];
         if (arg == "--port" && i + 1 < argc) {
-            portStr = argv[++i];
+            port = stoi(argv[++i]);
         }
         else if (arg == "--memsize" && i + 1 < argc) {
-            memsizeStr = argv[++i];
+            memSizeBytes = stoul(argv[++i]) * 1024 * 1024;
         }
         else if (arg == "--dumpFolder" && i + 1 < argc) {
             dumpFolder = argv[++i];
         }
-        else {
-            std::cerr << "Argumento desconocido: " << arg << std::endl;
-        }
     }
-    if (portStr.empty() || memsizeStr.empty() || dumpFolder.empty()) {
-        return false;
-    }
-    port = std::stoi(portStr);
-    memSizeBytes = std::stoul(memsizeStr) * 1024 * 1024;
-    return true;
+    return !dumpFolder.empty() && port > 0 && memSizeBytes > 0;
 }
 
-// Función que inicializa y mantiene el servidor en ejecución.
-void runServer(int port, size_t memSizeBytes, const std::string& dumpFolder) {
+void runServer(int port, size_t memSizeBytes, const string& dumpFolder) {
+    // Inicializa Winsock
     WSADATA wsaData;
-    int server_fd, client_socket;
-    struct sockaddr_in address;
-    int opt = 1;
-    int addrlen = sizeof(address);
-    char buffer[1024] = { 0 };
-
-    // Inicializar Winsock.
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        std::cerr << "WSAStartup failed" << std::endl;
+    int wsaResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (wsaResult != 0) {
+        cerr << "[SERVIDOR] WSAStartup falló: " << wsaResult << endl;
         return;
     }
 
-    // Crear el socket del servidor.
-    server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    // Crea el socket del servidor
+    SOCKET server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd == INVALID_SOCKET) {
-        std::cerr << "Error al crear el socket" << std::endl;
+        cerr << "[SERVIDOR] Error al crear el socket del servidor." << endl;
         WSACleanup();
         return;
     }
 
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, (char*)&opt, sizeof(opt)) == SOCKET_ERROR) {
-        std::cerr << "setsockopt failed" << std::endl;
-        closesocket(server_fd);
-        WSACleanup();
-        return;
-    }
+    // Permitir reusar la dirección
+    int opt = 1;
+    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, (char*)&opt, sizeof(opt));
 
+    // Asocia la dirección y el puerto
+    sockaddr_in address;
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(port);
 
-    if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) == SOCKET_ERROR) {
-        std::cerr << "Error en bind" << std::endl;
+    if (bind(server_fd, (sockaddr*)&address, sizeof(address)) == SOCKET_ERROR) {
+        cerr << "[SERVIDOR] Error en bind. Código: " << WSAGetLastError() << endl;
         closesocket(server_fd);
         WSACleanup();
         return;
     }
 
+    // Escucha conexiones entrantes
     if (listen(server_fd, 5) == SOCKET_ERROR) {
-        std::cerr << "Error en listen" << std::endl;
+        cerr << "[SERVIDOR] Error en listen. Código: " << WSAGetLastError() << endl;
         closesocket(server_fd);
         WSACleanup();
         return;
     }
 
-    std::cout << "Servidor MemoryManager escuchando en el puerto " << port << std::endl;
-
-    // Inicializar el MemoryManager y establecer la carpeta de dump.
+    // Inicializa el MemoryManager
     MemoryManager::getInstance().init(memSizeBytes);
-    //MemoryManager::getInstance().setDumpFolder(dumpFolder);
-    std::cout << "Estado inicial del MemoryManager: " << MemoryManager::getInstance().getStatus() << std::endl;
+    MemoryManager::getInstance().setDumpFolder(dumpFolder);
 
-    // Bucle principal: aceptar conexiones y procesar comandos.
+    cout << "[SERVIDOR] Iniciado correctamente." << endl;
+    cout << "[SERVIDOR] Escuchando en el puerto " << port << endl;
+    cout << "[SERVIDOR] Carpeta de dumps: " << dumpFolder << endl;
+
+    // Bucle principal para aceptar y procesar conexiones
     while (true) {
-        client_socket = accept(server_fd, (struct sockaddr*)&address, &addrlen);
-        if (client_socket == INVALID_SOCKET) {
-            std::cerr << "Error en accept" << std::endl;
-            continue;
-        }
-        memset(buffer, 0, sizeof(buffer));
-        int bytesReceived = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
-        if (bytesReceived <= 0) {
+        try {
+            sockaddr_in clientAddr;
+            int clientLen = sizeof(clientAddr);
+            SOCKET client_socket = accept(server_fd, (sockaddr*)&clientAddr, &clientLen);
+            if (client_socket == INVALID_SOCKET) {
+                cerr << "[SERVIDOR] Error en accept. Código: " << WSAGetLastError() << endl;
+                continue;
+            }
+
+            // Recibir datos
+            char buffer[1024] = { 0 };
+            int bytesReceived = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+            if (bytesReceived <= 0) {
+                cerr << "[SERVIDOR] Error al recibir datos o conexión cerrada." << endl;
+                closesocket(client_socket);
+                continue;
+            }
+            buffer[bytesReceived] = '\0';
+            cout << "[SERVIDOR] Comando recibido: " << buffer << endl;
+
+            // Procesar comando
+            istringstream iss(buffer);
+            string cmd;
+            iss >> cmd;
+
+            string reply;
+            if (cmd == "create") {
+                size_t size;
+                string type;
+                iss >> size >> type;
+                int blockID = MemoryManager::getInstance().createBlock(size, type);
+                if (blockID < 0) {
+                    reply = "Error al crear bloque (espacio insuficiente o inválido).";
+                }
+                else {
+                    reply = "Bloque creado con ID=" + to_string(blockID);
+                }
+            }
+            else if (cmd == "set") {
+                int id;
+                string value;
+                iss >> id >> value;
+                MemoryManager::getInstance().setValue(id, value);
+                reply = "Valor asignado al bloque " + to_string(id);
+            }
+            else if (cmd == "get") {
+                int id;
+                iss >> id;
+                string val = MemoryManager::getInstance().getValue(id);
+                reply = "Bloque " + to_string(id) + " -> " + val;
+            }
+            else if (cmd == "increase") {
+                int id;
+                iss >> id;
+                MemoryManager::getInstance().increaseRefCount(id);
+                reply = "RefCount incrementado en bloque " + to_string(id);
+            }
+            else if (cmd == "decrease") {
+                int id;
+                iss >> id;
+                MemoryManager::getInstance().decreaseRefCount(id);
+                reply = "RefCount decrementado en bloque " + to_string(id);
+            }
+            else if (cmd == "status") {
+                reply = MemoryManager::getInstance().getStatus();
+            }
+            else if (cmd == "map") {
+                reply = MemoryManager::getInstance().getMemoryMap();
+            }
+            else {
+                reply = "Comando inválido";
+            }
+
+            int sendResult = send(client_socket, reply.c_str(), (int)reply.size(), 0);
+            if (sendResult == SOCKET_ERROR) {
+                cerr << "[SERVIDOR] Error al enviar respuesta. Código: " << WSAGetLastError() << endl;
+            }
+            else {
+                cout << "[SERVIDOR] Respuesta enviada: " << reply << endl;
+            }
+
             closesocket(client_socket);
-            continue;
         }
-        std::string command(buffer);
-        std::cout << "Comando recibido: " << command << std::endl;
-        std::istringstream iss(command);
-        std::string cmd;
-        iss >> cmd;
-        std::string reply;
-        if (cmd == "create") {
-            int size;
-            iss >> size;
-            int blockID = MemoryManager::getInstance().createBlock(size);
-            reply = "Block created with ID: " + std::to_string(blockID);
+        catch (const exception& ex) {
+            cerr << "[SERVIDOR] Excepción capturada: " << ex.what() << endl;
         }
-        else if (cmd == "set") {
-            int id;
-            std::string value;
-            iss >> id >> value;
-            MemoryManager::getInstance().setValue(id, value);
-            reply = "Value set for block " + std::to_string(id);
+        catch (...) {
+            cerr << "[SERVIDOR] Excepción desconocida capturada." << endl;
         }
-        else if (cmd == "get") {
-            int id;
-            iss >> id;
-            std::string value = MemoryManager::getInstance().getValue(id);
-            reply = "Block " + std::to_string(id) + " has value: " + value;
-        }
-        else if (cmd == "status") {
-            reply = MemoryManager::getInstance().getStatus();
-        }
-        else {
-            reply = "Unknown command";
-        }
-        send(client_socket, reply.c_str(), reply.size(), 0);
-        closesocket(client_socket);
     }
 
     closesocket(server_fd);
     WSACleanup();
 }
 
-int main(int argc, char** argv) {
-    int port;
-    size_t memSizeBytes;
-    std::string dumpFolder;
-    if (!parseArguments(argc, argv, port, memSizeBytes, dumpFolder)) {
-        std::cerr << "Uso: MemoryManagerServer.exe --port <puerto> --memsize <MB> --dumpFolder <carpeta>" << std::endl;
-        return 1;
-    }
+//
+// main tradicional por línea de comandos:
+//
+//int main(int argc, char** argv) {
+//    int port = 0;
+//    size_t memSizeBytes = 0;
+//    string dumpFolder;
+//
+//    if (!parseArguments(argc, argv, port, memSizeBytes, dumpFolder)) {
+//        cerr << "Uso: " << argv[0]
+//             << " --port <puerto> --memsize <MB> --dumpFolder <carpeta>" << endl;
+//        return 1;
+//    }
+//
+//    runServer(port, memSizeBytes, dumpFolder);
+//    return 0;
+//}
+
+// main para Visual Studio (o sin argumentos)
+int main() {
+    int port = 8080;
+    // 100 MB de memoria
+    size_t memSizeBytes = 100 * 1024 * 1024;
+    string dumpFolder = "dumps";
+
     runServer(port, memSizeBytes, dumpFolder);
     return 0;
 }
