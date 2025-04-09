@@ -129,7 +129,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="MPointersClient.cpp" />
-    <ClCompile Include="MPointerConnector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MPointerConnector.h" />

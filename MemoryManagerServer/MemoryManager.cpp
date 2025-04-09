@@ -105,7 +105,6 @@ void MemoryManager::setValue(int blockID, const string& value) {
         return;
     }
 
-    // Dependiendo del tipo, convertimos el valor
     const string& type = it->second.type;
     size_t offset = it->second.offset;
 
@@ -129,9 +128,24 @@ void MemoryManager::setValue(int blockID, const string& value) {
         bool b = (value == "true" || value == "1");
         memcpy(static_cast<char*>(memoryBlock_) + offset, &b, sizeof(bool));
     }
+    else if (type == "char") {
+        // Para char: guarda exactamente un carácter
+        char c = (value.empty() ? '\0' : value[0]);
+        memcpy(static_cast<char*>(memoryBlock_) + offset, &c, sizeof(char));
+    }
+    else if (type == "string") {
+        // Para string: copiamos la cadena, asegurando dejar espacio para el terminador nulo.
+        // Se copia un máximo de (size - 1) bytes.
+        size_t maxCopy = (it->second.size > 0 ? it->second.size - 1 : 0);
+        size_t copySize = min(maxCopy, value.size());
+        memcpy(static_cast<char*>(memoryBlock_) + offset, value.c_str(), copySize);
+        // Establecer el terminador nulo si es posible
+        if (maxCopy > 0) {
+            static_cast<char*>(memoryBlock_)[offset + copySize] = '\0';
+        }
+    }
     else {
-        // Para cualquier otro tipo, lo tratamos como string/buffer
-        // Copiamos hasta it->second.size bytes
+        // Para otros tipos: se trata como buffer de string.
         strncpy_s(static_cast<char*>(memoryBlock_) + offset,
             it->second.size,
             value.c_str(),
@@ -142,6 +156,7 @@ void MemoryManager::setValue(int blockID, const string& value) {
     action << "SET -> ID=" << blockID << ", newValue=" << value;
     dumpMemory(action.str());
 }
+
 
 string MemoryManager::getValue(int blockID) const {
     lock_guard<recursive_mutex> lock(mtx_);
@@ -156,38 +171,53 @@ string MemoryManager::getValue(int blockID) const {
     ostringstream oss;
 
     if (type == "int") {
-        int val;
+        int val = 0;
         memcpy(&val, static_cast<char*>(memoryBlock_) + offset, sizeof(int));
         oss << val;
     }
     else if (type == "double") {
-        double val;
+        double val = 0.0;
         memcpy(&val, static_cast<char*>(memoryBlock_) + offset, sizeof(double));
         oss << val;
     }
     else if (type == "float") {
-        float val;
+        float val = 0.0f;
         memcpy(&val, static_cast<char*>(memoryBlock_) + offset, sizeof(float));
         oss << val;
     }
     else if (type == "long") {
-        long val;
+        long val = 0;
         memcpy(&val, static_cast<char*>(memoryBlock_) + offset, sizeof(long));
         oss << val;
     }
     else if (type == "bool") {
-        bool b;
+        bool b = false;
         memcpy(&b, static_cast<char*>(memoryBlock_) + offset, sizeof(bool));
         oss << (b ? "true" : "false");
     }
+    else if (type == "char") {
+        char val = 0;
+        if (it->second.size >= sizeof(char))
+            memcpy(&val, static_cast<char*>(memoryBlock_) + offset, sizeof(char));
+        oss << val;
+    }
+    else if (type == "string") {
+        // Para string: se asume que se guardó la cadena con terminador nulo.
+        const char* start = static_cast<const char*>(memoryBlock_) + offset;
+        // Leer hasta el primer '\0' o hasta info.size, lo que ocurra primero.
+        size_t len = strnlen(start, it->second.size);
+        oss << string(start, len);
+    }
     else {
-        // Asumimos que es un string/buffer
-        // Lo leemos hasta size, pero mostramos como string
-        // (Podríamos leer la memoria entera, pero con cuidado de no pasar de size)
-        oss << (static_cast<char*>(memoryBlock_) + offset);
+        // Para otros tipos, se imprime en hexadecimal
+        unsigned char* data = static_cast<unsigned char*>(memoryBlock_) + offset;
+        for (size_t i = 0; i < it->second.size; i++) {
+            oss << hex << setw(2) << setfill('0') << (int)data[i] << " ";
+        }
     }
     return oss.str();
 }
+
 
 void MemoryManager::increaseRefCount(int blockID) {
     lock_guard<recursive_mutex> lock(mtx_);
@@ -241,27 +271,74 @@ string MemoryManager::getMemoryMap() const {
     ostringstream oss;
     oss << "\n=== Memory Map ===\n";
     for (auto& kv : blocks_) {
-        int blockID = kv.first;
+        int bID = kv.first;
         const BlockInfo& info = kv.second;
-
-        // Calculamos la dirección real en memoria
         uintptr_t realAddr = computeRealAddress(info.offset);
-
-        oss << "ID=" << blockID
+        oss << "ID=" << bID
             << ", Offset=" << info.offset
-            << ", Address=0x" << std::hex << realAddr << std::dec
+            << ", Address=0x" << hex << realAddr << dec
             << ", Size=" << info.size
             << ", Type=" << info.type
-            << ", RefCount=" << info.refCount
-            << "\n";
+            << ", RefCount=" << info.refCount;
+
+        // A continuación, leemos el contenido del bloque y lo mostramos.
+        oss << ", Value=";
+        if (info.type == "int") {
+            int val = 0;
+            if (info.size >= sizeof(int))
+                memcpy(&val, static_cast<char*>(memoryBlock_) + info.offset, sizeof(int));
+            oss << val;
+        }
+        else if (info.type == "double") {
+            double val = 0.0;
+            if (info.size >= sizeof(double))
+                memcpy(&val, static_cast<char*>(memoryBlock_) + info.offset, sizeof(double));
+            oss << val;
+        }
+        else if (info.type == "float") {
+            float val = 0.0f;
+            if (info.size >= sizeof(float))
+                memcpy(&val, static_cast<char*>(memoryBlock_) + info.offset, sizeof(float));
+            oss << val;
+        }
+        else if (info.type == "bool") {
+            bool val = false;
+            if (info.size >= sizeof(bool))
+                memcpy(&val, static_cast<char*>(memoryBlock_) + info.offset, sizeof(bool));
+            oss << (val ? "true" : "false");
+        }
+        else if (info.type == "string") {
+            const char* start = static_cast<const char*>(memoryBlock_) + info.offset;
+            size_t len = strnlen(start, info.size);
+            string val(start, len);
+            oss << val;
+		}
+		else if (info.type == "long") {
+			long val = 0;
+			if (info.size >= sizeof(long))
+				memcpy(&val, static_cast<char*>(memoryBlock_) + info.offset, sizeof(long));
+			oss << val;
+		}
+		else if (info.type == "char") {
+			char val = 0;
+			if (info.size >= sizeof(char))
+				memcpy(&val, static_cast<char*>(memoryBlock_) + info.offset, sizeof(char));
+			oss << val;
+		}
+        else {
+            // Para tipos no reconocidos, mostramos todo el contenido en hexadecimal
+            unsigned char* data = static_cast<unsigned char*>(memoryBlock_) + info.offset;
+            for (size_t i = 0; i < info.size; i++) {
+                oss << hex << setw(2) << setfill('0') << (int)data[i] << " ";
+            }
+        }
+        oss << "\n";
     }
-    // También podemos mostrar los bloques libres
+
     if (!freeBlocks_.empty()) {
         oss << "\n--- Free Blocks ---\n";
         for (auto& fb : freeBlocks_) {
-            oss << "Offset=" << fb.offset
-                << ", Size=" << fb.size
-                << "\n";
+            oss << "Offset=" << fb.offset << ", Size=" << fb.size << "\n";
         }
     }
     oss << "==================\n";
@@ -279,7 +356,7 @@ void MemoryManager::setDumpFolder(const string& folder) {
     }
 }
 
-void MemoryManager::dumpMemory(const std::string& action) const {
+void MemoryManager::dumpMemory(const string& action) const {
     if (dumpFolder_.empty()) return;
 
     // Creamos (o abrimos) un archivo de dump con nombre "memory_dump.txt" y agregamos

@@ -119,8 +119,17 @@ void runServer(int port, size_t memSizeBytes, const string& dumpFolder) {
             }
             else if (cmd == "set") {
                 int id;
+                iss >> id;
                 string value;
-                iss >> id >> value;
+                getline(iss, value); // Lee el resto de la línea
+                // Elimina espacios en blanco iniciales
+                size_t start = value.find_first_not_of(" ");
+                if (start != string::npos) {
+                    value = value.substr(start);
+                }
+                else {
+                    value = "";
+                }
                 MemoryManager::getInstance().setValue(id, value);
                 reply = "Valor asignado al bloque " + to_string(id);
             }

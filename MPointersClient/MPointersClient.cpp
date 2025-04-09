@@ -4,49 +4,6 @@
 #pragma comment(lib, "Ws2_32.lib")
 using namespace std;
 
-// Definición del nodo para la lista enlazada
-template <typename T>
-struct Node {
-    T data;
-    MPointer<Node<T>> next;
-    // Constructor por defecto
-    Node() : data(), next() {}
-};
-
-// Se definen operadores para serializar y deserializar Node<int>
-// Formato: "data;nextID" (donde nextID es el ID del siguiente nodo)
-ostream& operator<<(ostream& os, const Node<int>& node) {
-    os << node.data << ";" << node.next.getID();
-    return os;
-}
-
-istream& operator>>(istream& is, Node<int>& node) {
-    string s;
-    getline(is, s);
-    size_t pos = s.find(";");
-    if (pos != string::npos) {
-        node.data = stoi(s.substr(0, pos));
-        int nextID = stoi(s.substr(pos + 1));
-        node.next.setID(nextID);
-    }
-    return is;
-}
-
-// Función para imprimir la lista enlazada usando getRemoteValue()
-template <typename T>
-void printList(MPointer<Node<T>>& head) {
-    MPointer<Node<T>> current = head;
-    int index = 0;
-    while (true) {
-        Node<T> nodeValue = current.getRemoteValue();
-        cout << "Nodo " << index << " -> data: " << nodeValue.data << endl;
-        if (nodeValue.next.isNull())
-            break;
-        current = nodeValue.next;
-        index++;
-    }
-}
-
 int main() {
     // Inicializar Winsock
     WSADATA wsaData;
@@ -55,40 +12,83 @@ int main() {
         return 1;
     }
 
-    // Configurar MPointer para conectarse al Memory Manager
-    MPointer<Node<int>>::Init("127.0.0.1", 8080);
+    cout << "=== PRUEBAS CON MPointer ===" << endl;
 
-    // Crear el primer nodo (cabeza de la lista)
-    auto head = MPointer<Node<int>>::New();
-    Node<int> n1;
-    n1.data = 10;
-    head = n1;  // Usa operator=(const T&) para asignar n1
+    // Configurar el Memory Manager para todos los tipos
+    MPointer<int>::Init("127.0.0.1", 8080);
+    MPointer<string>::Init("127.0.0.1", 8080);
+    MPointer<char>::Init("127.0.0.1", 8080);
+    MPointer<long>::Init("127.0.0.1", 8080);
+    MPointer<float>::Init("127.0.0.1", 8080);
+    MPointer<bool>::Init("127.0.0.1", 8080);
+    MPointer<unsigned char>::Init("127.0.0.1", 8080);
 
-    // Crear el segundo nodo
-    auto second = MPointer<Node<int>>::New();
-    Node<int> n2;
-    n2.data = 20;
-    second = n2;
+    // --- Prueba con int ---
+    MPointer<int> pInt = MPointer<int>::New();
+    cout << "[CLIENTE] MPointer<int> creado con ID: " << pInt.getID() << endl;
+    *pInt = 123;
+    int valorInt = *pInt;
+    cout << "[CLIENTE] Valor leído desde MPointer<int>: " << valorInt << endl;
 
-    // Enlazar: head->next = second
-    Node<int> temp = head.getRemoteValue();
-    temp.next = second;
-    head = temp;  // Actualiza head en el servidor
+    // --- Prueba con string ---
+    MPointer<string> pStr = MPointer<string>::New();
+    cout << "\n[CLIENTE] MPointer<string> creado con ID: " << pStr.getID() << endl;
+    *pStr = "Hello World";
+    string valorStr = *pStr;
+    cout << "[CLIENTE] Valor leído desde MPointer<string>: " << valorStr << endl;
 
-    // Crear el tercer nodo
-    auto third = MPointer<Node<int>>::New();
-    Node<int> n3;
-    n3.data = 30;
-    third = n3;
+    // --- Prueba con char ---
+    MPointer<char> pChar = MPointer<char>::New();
+    cout << "\n[CLIENTE] MPointer<char> creado con ID: " << pChar.getID() << endl;
+    *pChar = 'X';
+    char valorChar = *pChar;
+    cout << "[CLIENTE] Valor leído desde MPointer<char>: " << valorChar << endl;
 
-    // Enlazar: second->next = third
-    Node<int> temp2 = second.getRemoteValue();
-    temp2.next = third;
-    second = temp2;  // Actualiza second en el servidor
+    // --- Prueba con long ---
+    MPointer<long> pLong = MPointer<long>::New();
+    cout << "\n[CLIENTE] MPointer<long> creado con ID: " << pLong.getID() << endl;
+    *pLong = 9876543210L;
+    long valorLong = *pLong;
+    cout << "[CLIENTE] Valor leído desde MPointer<long>: " << valorLong << endl;
 
-    // Imprimir la lista enlazada usando getRemoteValue()
-    cout << "Lista enlazada:" << endl;
-    printList(head);
+    // --- Prueba con float ---
+    MPointer<float> pFloat = MPointer<float>::New();
+    cout << "\n[CLIENTE] MPointer<float> creado con ID: " << pFloat.getID() << endl;
+    *pFloat = 3.14f;
+    float valorFloat = *pFloat;
+    cout << "[CLIENTE] Valor leído desde MPointer<float>: " << valorFloat << endl;
+
+    // --- Prueba con bool ---
+    MPointer<bool> pBool = MPointer<bool>::New();
+    cout << "\n[CLIENTE] MPointer<bool> creado con ID: " << pBool.getID() << endl;
+    *pBool = true;
+    bool valorBool = *pBool;
+    cout << "[CLIENTE] Valor leído desde MPointer<bool>: " << (valorBool ? "true" : "false") << endl;
+
+    // --- Prueba con unsigned char (byte) ---
+    MPointer<unsigned char> pByte = MPointer<unsigned char>::New();
+    cout << "\n[CLIENTE] MPointer<unsigned char> creado con ID: " << pByte.getID() << endl;
+    *pByte = 0xAB;
+    unsigned char valorByte = *pByte;
+    cout << "[CLIENTE] Valor leído desde MPointer<unsigned char>: 0x"
+        << hex << (int)valorByte << dec << endl;
+
+    // --- Prueba del operador & ---
+    cout << "\n[CLIENTE] Operador & aplicado a pInt retorna: " << &pInt << endl;
+
+    // --- Prueba de copia de MPointers: pInt2 = pInt ---
+    MPointer<int> pInt2;
+    pInt2 = pInt;  // Copia el blockID y aumenta el refCount en el servidor.
+    cout << "\n[CLIENTE] Tras pInt2 = pInt:" << endl;
+    cout << "           pInt  ID: " << &pInt << " - Valor: " << *pInt << endl;
+    cout << "           pInt2 ID: " << &pInt2 << " - Valor: " << *pInt2 << endl;
+
+    // Instrucciones de uso:
+    // - MPointer<T>::New() crea un puntero remoto (se reserva localmente solo el blockID).
+    // - Para asignar un valor, se usa: *p = valor;
+    // - Para leer el valor, se usa: T x = *p;
+    // - Para obtener el identificador (la “dirección remota”), se usa p.getID() o el operador & (sobrecargado).
+    // - Para copiar un puntero, se usa p2 = p; (esto incrementa el refCount en el servidor).
 
     WSACleanup();
     return 0;
