@@ -21,7 +21,6 @@ int main() {
     MPointer<long>::Init("127.0.0.1", 8080);
     MPointer<float>::Init("127.0.0.1", 8080);
     MPointer<bool>::Init("127.0.0.1", 8080);
-    MPointer<unsigned char>::Init("127.0.0.1", 8080);
 
     // --- Prueba con int ---
     MPointer<int> pInt = MPointer<int>::New();
@@ -64,14 +63,6 @@ int main() {
     *pBool = true;
     bool valorBool = *pBool;
     cout << "[CLIENTE] Valor leído desde MPointer<bool>: " << (valorBool ? "true" : "false") << endl;
-
-    // --- Prueba con unsigned char (byte) ---
-    MPointer<unsigned char> pByte = MPointer<unsigned char>::New();
-    cout << "\n[CLIENTE] MPointer<unsigned char> creado con ID: " << pByte.getID() << endl;
-    *pByte = 0xAB;
-    unsigned char valorByte = *pByte;
-    cout << "[CLIENTE] Valor leído desde MPointer<unsigned char>: 0x"
-        << hex << (int)valorByte << dec << endl;
 
     // --- Prueba del operador & ---
     cout << "\n[CLIENTE] Operador & aplicado a pInt retorna: " << &pInt << endl;

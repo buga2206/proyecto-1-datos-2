@@ -1,8 +1,8 @@
 ﻿  MPointersClient.cpp
-C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MPointersClient\MPointersClient.cpp(50,14): warning C4305: 'argumento': truncamiento de '__int64' a 'const T'
-C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MPointersClient\MPointersClient.cpp(50,14): warning C4305:         with
-C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MPointersClient\MPointersClient.cpp(50,14): warning C4305:         [
-C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MPointersClient\MPointersClient.cpp(50,14): warning C4305:             T=long
-C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MPointersClient\MPointersClient.cpp(50,14): warning C4305:         ]
-C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MPointersClient\MPointersClient.cpp(50,14): warning C4309: 'argumento': truncamiento de valor constante
-  MPointersClient.vcxproj -> C:\Users\User\desktop\Datos 2\Proyecto 1\proyecto-1-datos-2\MPointersClient\x64\Debug\MPointersClient.exe
+C:\Users\sopor\OneDrive\Escritorio\datos 2\proyecto 1\proyecto-1-datos-2\MPointersClient\MPointersClient.cpp(49,14): warning C4305: 'argumento': truncamiento de '__int64' a 'const T'
+C:\Users\sopor\OneDrive\Escritorio\datos 2\proyecto 1\proyecto-1-datos-2\MPointersClient\MPointersClient.cpp(49,14): warning C4305:         with
+C:\Users\sopor\OneDrive\Escritorio\datos 2\proyecto 1\proyecto-1-datos-2\MPointersClient\MPointersClient.cpp(49,14): warning C4305:         [
+C:\Users\sopor\OneDrive\Escritorio\datos 2\proyecto 1\proyecto-1-datos-2\MPointersClient\MPointersClient.cpp(49,14): warning C4305:             T=long
+C:\Users\sopor\OneDrive\Escritorio\datos 2\proyecto 1\proyecto-1-datos-2\MPointersClient\MPointersClient.cpp(49,14): warning C4305:         ]
+C:\Users\sopor\OneDrive\Escritorio\datos 2\proyecto 1\proyecto-1-datos-2\MPointersClient\MPointersClient.cpp(49,14): warning C4309: 'argumento': truncamiento de valor constante
+  MPointersClient.vcxproj -> C:\Users\sopor\OneDrive\Escritorio\datos 2\proyecto 1\proyecto-1-datos-2\MPointersClient\x64\Debug\MPointersClient.exe

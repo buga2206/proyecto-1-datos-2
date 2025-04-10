@@ -183,31 +183,31 @@ void runServer(int port, size_t memSizeBytes, const string& dumpFolder) {
     WSACleanup();
 }
 
-//
-// main tradicional por línea de comandos:
-//
-//int main(int argc, char** argv) {
-//    int port = 0;
-//    size_t memSizeBytes = 0;
-//    string dumpFolder;
-//
-//    if (!parseArguments(argc, argv, port, memSizeBytes, dumpFolder)) {
-//        cerr << "Uso: " << argv[0]
-//             << " --port <puerto> --memsize <MB> --dumpFolder <carpeta>" << endl;
-//        return 1;
-//    }
-//
-//    runServer(port, memSizeBytes, dumpFolder);
-//    return 0;
-//}
 
-// main para Visual Studio (o sin argumentos)
-int main() {
-    int port = 8080;
-    // 100 MB de memoria
-    size_t memSizeBytes = 100 * 1024 * 1024;
-    string dumpFolder = "dumps";
+ /*main tradicional por línea de comandos:*/
+
+int main(int argc, char** argv) {
+    int port = 0;
+    size_t memSizeBytes = 0;
+    string dumpFolder;
+
+    if (!parseArguments(argc, argv, port, memSizeBytes, dumpFolder)) {
+        cerr << "Uso: " << argv[0]
+             << " --port <puerto> --memsize <MB> --dumpFolder <carpeta>" << endl;
+        return 1;
+    }
 
     runServer(port, memSizeBytes, dumpFolder);
     return 0;
 }
+
+// main para Visual Studio (o sin argumentos)
+//int main() {
+//    int port = 8080;
+//    // 100 MB de memoria
+//    size_t memSizeBytes = 100 * 1024 * 1024;
+//    string dumpFolder = "dumps";
+//
+//    runServer(port, memSizeBytes, dumpFolder);
+//    return 0;
+//}
